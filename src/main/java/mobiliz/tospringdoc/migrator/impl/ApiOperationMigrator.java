@@ -11,11 +11,12 @@ import com.github.javaparser.ast.nodeTypes.NodeWithAnnotations;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import java.util.List;
 import mobiliz.tospringdoc.core.Attributes;
 import mobiliz.tospringdoc.migrator.AbstractAnnotationMigrator;
 import mobiliz.tospringdoc.util.NodeUtils;
 import mobiliz.tospringdoc.util.ResponseUtils;
+
+import java.util.List;
 
 public class ApiOperationMigrator extends AbstractAnnotationMigrator {
 
@@ -61,7 +62,6 @@ public class ApiOperationMigrator extends AbstractAnnotationMigrator {
         if (NodeUtils.getPair(responseOkExpr, Attributes.RESPONSE_CODE) == null) {
             responseOkExpr.addPair(Attributes.RESPONSE_CODE, new StringLiteralExpr("200"));
         }
-        NodeUtils.applyResponse(responseOkExpr, response, responseContainer);
     }
 
 

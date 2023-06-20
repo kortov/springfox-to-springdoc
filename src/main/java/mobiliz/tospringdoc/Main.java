@@ -2,13 +2,9 @@ package mobiliz.tospringdoc;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.Problem;
 import com.github.javaparser.ast.CompilationUnit;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 import mobiliz.tospringdoc.core.MigrationUnit;
 import mobiliz.tospringdoc.migrator.ToSpringDocVisitor;
 import mobiliz.tospringdoc.util.FileUtils;
@@ -22,19 +18,29 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class Main {
 
     private static final Options CLI_OPTIONS = new Options();
-    private static final JavaParser JAVA_PARSER = new JavaParser();
+    private static final JavaParser JAVA_PARSER;
     private static final String HELP = "h";
     private static final String IN_PLACE = "i";
     private static final String OUT = "o";
 
     static {
+        JAVA_PARSER = new JavaParser();
+        JAVA_PARSER.getParserConfiguration().setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
         CLI_OPTIONS.addOption(HELP, "help", false, "display this help and exit");
         CLI_OPTIONS.addOption(IN_PLACE, "in-place", false, "migrate files in place");
         CLI_OPTIONS.addOption(OUT, "out", true,
-            "write migrated source instead of stdout. This option is discarded if in-place option set.");
+                              "write migrated source instead of stdout. This option is discarded if in-place option set.");
     }
 
     public static void main(String... args) throws IOException {
@@ -56,43 +62,61 @@ public class Main {
         String sourcePath = cmd.getArgList().get(0);
         List<MigrationUnit> migrationUnits = parseSourceFiles(sourcePath);
         ToSpringDocVisitor toSpringDocVisitor = new ToSpringDocVisitor();
-        migrationUnits.forEach(mu -> {
-            toSpringDocVisitor.visit(mu.getCompilationUnit(), null);
-        });
+        migrationUnits.forEach(mu -> toSpringDocVisitor.visit(mu.getCompilationUnit(), null));
 
         boolean inPlace = cmd.hasOption(IN_PLACE);
         String outPath = inPlace ? sourcePath : cmd.getOptionValue(OUT);
         SourceWriter sourceWriter = outPath == null ? new ConsoleWriter() : new SourceFileWriter(outPath);
-        migrationUnits.forEach(mu -> {
-            try {
-                sourceWriter.write(mu);
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-        });
+
+        Set<CompilationUnit> units = toSpringDocVisitor.getChangedUnits();
+
+        migrationUnits.
+            stream().filter(mu -> units.contains(mu.getCompilationUnit()))
+            .forEach(mu -> {
+                try {
+                    sourceWriter.write(mu);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+            });
     }
 
     private List<MigrationUnit> parseSourceFiles(String sourcePath) throws IOException {
         String absSourcePath = new File(sourcePath).getAbsolutePath();
         List<File> sourceFiles = FileUtils.getJavaFiles(sourcePath);
-        return sourceFiles.stream()
-            .map(sourceFile -> {
-                try {
-                    ParseResult<CompilationUnit> parseResult = JAVA_PARSER.parse(sourceFile);
-                    String relativePath = sourceFile.getAbsolutePath().substring(absSourcePath.length());
-                    if (!parseResult.isSuccessful()) {
-                        printProblems(relativePath, parseResult.getProblems());
-                        System.exit(1);
-                    }
-                    return new MigrationUnit(relativePath, parseResult.getResult().get());
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                    System.exit(1);
+        List<MigrationUnit> result = new ArrayList<>();
+        for (File sourceFile : sourceFiles) {
+            try {
+                ParseResult<CompilationUnit> parseResult = JAVA_PARSER.parse(sourceFile);
+                String relativePath = sourceFile.getAbsolutePath().substring(absSourcePath.length());
+                if (!parseResult.isSuccessful()) {
+                    printProblems(relativePath, parseResult.getProblems());
                 }
-                return null;
-            })
-            .collect(Collectors.toList());
+                result.add(new MigrationUnit(relativePath, parseResult.getResult().get()));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+
+        return sourceFiles.stream()
+                          .map(sourceFile -> {
+                              try {
+                                  ParseResult<CompilationUnit> parseResult = JAVA_PARSER.parse(sourceFile);
+                                  String relativePath = sourceFile.getAbsolutePath().substring(absSourcePath.length());
+                                  if (!parseResult.isSuccessful()) {
+                                      printProblems(relativePath, parseResult.getProblems());
+                                      System.exit(1);
+                                  }
+                                  return new MigrationUnit(relativePath, parseResult.getResult().get());
+                              } catch (FileNotFoundException e) {
+                                  e.printStackTrace();
+                                  System.exit(1);
+                              }
+                              return null;
+                          })
+                          .toList();
     }
 
 

@@ -2,7 +2,8 @@ package mobiliz.tospringdoc.util;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
-import jakarta.servlet.http.HttpServletResponse;
+
+import javax.servlet.http.HttpServletResponse;
 
 public class ResponseUtils {
     public static final String LIST = "List";

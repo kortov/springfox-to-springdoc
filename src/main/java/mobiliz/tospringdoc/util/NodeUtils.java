@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import mobiliz.tospringdoc.core.Attributes;
 import mobiliz.tospringdoc.core.NodeFactory;
 
+import static mobiliz.tospringdoc.core.NodeFactory.createEmptyContentExpr;
+
 public final class NodeUtils {
 
     private NodeUtils() {
@@ -22,17 +24,29 @@ public final class NodeUtils {
         return null;
     }
 
-    public static void applyResponse(NormalAnnotationExpr expr, String response, String responseContainer) {
-        if (expr == null || response == null) {
+    public static void applyResponse(NormalAnnotationExpr expr, String response, String responseContainer,
+                                     Integer responseCode
+    ) {
+        if (expr == null) {
             return;
         }
         NormalAnnotationExpr content = null;
-        if (ResponseUtils.isArraySchemaRequired(responseContainer)) {
-            content = NodeFactory.createArrayContentExpr(response);
-            expr.tryAddImportToParentCompilationUnit(ArraySchema.class);
+
+        if (response == null) {
+            if (responseCode == 200 || responseCode == 201) {
+                return;
+            } else {
+                content = createEmptyContentExpr();
+            }
         } else {
-            content = NodeFactory.createContentExpr(response);
+            if (ResponseUtils.isArraySchemaRequired(responseContainer)) {
+                content = NodeFactory.createArrayContentExpr(response);
+                expr.tryAddImportToParentCompilationUnit(ArraySchema.class);
+            } else {
+                content = NodeFactory.createContentExpr(response);
+            }
         }
+
         expr.addPair(Attributes.CONTENT, content);
         expr.tryAddImportToParentCompilationUnit(Schema.class);
         expr.tryAddImportToParentCompilationUnit(Content.class);

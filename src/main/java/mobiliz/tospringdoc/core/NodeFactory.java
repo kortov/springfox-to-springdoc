@@ -44,6 +44,12 @@ public final class NodeFactory {
         return expr;
     }
 
+    public static NormalAnnotationExpr createEmptyContentExpr() {
+        NormalAnnotationExpr expr = new NormalAnnotationExpr();
+        expr.setName(Content.class.getSimpleName());
+        return expr;
+    }
+
     public static NormalAnnotationExpr createArrayContentExpr(String implementation) {
         NormalAnnotationExpr expr = new NormalAnnotationExpr();
         expr.setName(Content.class.getSimpleName());

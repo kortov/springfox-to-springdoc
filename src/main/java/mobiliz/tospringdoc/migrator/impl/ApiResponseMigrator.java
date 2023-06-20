@@ -6,12 +6,13 @@ import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import io.swagger.annotations.ApiResponse;
-import java.util.ArrayList;
-import java.util.List;
 import mobiliz.tospringdoc.core.Attributes;
 import mobiliz.tospringdoc.migrator.AbstractAnnotationMigrator;
 import mobiliz.tospringdoc.util.NodeUtils;
 import mobiliz.tospringdoc.util.ResponseUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ApiResponseMigrator extends AbstractAnnotationMigrator {
 
@@ -25,10 +26,11 @@ public class ApiResponseMigrator extends AbstractAnnotationMigrator {
         expr.getPairs().clear();
         String response = null;
         String responseContainer = null;
+        Integer responseCode = null;
         for (MemberValuePair pair : pairs) {
             switch (pair.getNameAsString()) {
                 case Attributes.CODE:
-                    int responseCode = ResponseUtils.resolveResponseCode(pair.getValue().toString());
+                    responseCode = ResponseUtils.resolveResponseCode(pair.getValue().toString());
                     expr.addPair(Attributes.RESPONSE_CODE, new StringLiteralExpr(String.valueOf(responseCode)));
                     break;
                 case Attributes.MESSAGE:
@@ -41,7 +43,7 @@ public class ApiResponseMigrator extends AbstractAnnotationMigrator {
                     responseContainer = pair.getValue().toString();
             }
         }
-        NodeUtils.applyResponse(expr, response, responseContainer);
+        NodeUtils.applyResponse(expr, response, responseContainer, responseCode);
     }
 
     @Override
