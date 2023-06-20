@@ -33,7 +33,7 @@ public final class NodeUtils {
         NormalAnnotationExpr content = null;
 
         if (response == null) {
-            if (responseCode == 200 || responseCode == 201) {
+            if (responseCode != null && (200 == responseCode || 201 == responseCode)) {
                 return;
             } else {
                 content = createEmptyContentExpr();
