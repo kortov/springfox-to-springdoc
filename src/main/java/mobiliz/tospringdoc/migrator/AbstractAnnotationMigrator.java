@@ -37,6 +37,7 @@ public abstract class AbstractAnnotationMigrator implements AnnotationMigrator {
         expr.getParentNode().ifPresent(parent -> {
             if (parent instanceof NodeWithAnnotations nwa) {
                 parent.remove(expr);
+                normalAnnotationExpr.setParentNode(parent);
                 nwa.addAnnotation(normalAnnotationExpr);
                 migrate(normalAnnotationExpr);
             }

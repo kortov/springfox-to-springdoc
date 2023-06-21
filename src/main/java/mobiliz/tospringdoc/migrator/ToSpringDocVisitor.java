@@ -1,6 +1,8 @@
 package mobiliz.tospringdoc.migrator;
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
@@ -50,31 +52,64 @@ public class ToSpringDocVisitor extends ModifierVisitor<Object> {
         ANNO_MIGRATE_MAP.put(ApiResponses.class.getSimpleName(), new ApiResponsesMigrator());
     }
 
+    /**
+     * Обработка аннотации с аргументами
+     */
     @Override
     public Visitable visit(NormalAnnotationExpr n, Object arg) {
         String name = n.getNameAsString();
-        if (ANNO_MIGRATE_MAP.containsKey(name)) {
+        if (ANNO_MIGRATE_MAP.containsKey(name)
+            // TODO: отфильтровывать exception
+            &&
+            isNotException(n)
+        ) {
             ANNO_MIGRATE_MAP.get(name).migrate(n);
             n.findAncestor(CompilationUnit.class).ifPresent(p -> changedUnits.add(p));
-
         }
         return n;
     }
 
+    private static boolean isNotException(AnnotationExpr n) {
+        return n.getParentNode()
+                .filter(nd -> nd instanceof ClassOrInterfaceDeclaration)
+                .map(nd -> (ClassOrInterfaceDeclaration) nd)
+                .filter(c -> c.getNameAsString().contains("Exception")).isEmpty();
+    }
+
+    private static boolean isFieldOfClass(AnnotationExpr n, String classString) {
+        return n.getParentNode()
+                .flatMap(nd -> nd.getParentNode())
+                .filter(nd -> nd instanceof ClassOrInterfaceDeclaration)
+                .map(nd -> (ClassOrInterfaceDeclaration) nd)
+                .filter(c -> c.getNameAsString().contains(classString)).isPresent();
+    }
+
+    /**
+     * Обработка аннотации с одним аргументом
+     */
     @Override
     public Visitable visit(SingleMemberAnnotationExpr n, Object arg) {
         String name = n.getNameAsString();
-        if (ANNO_MIGRATE_MAP.containsKey(name)) {
+        if (ANNO_MIGRATE_MAP.containsKey(name)
+            &&
+            isNotException(n)
+        ) {
             ANNO_MIGRATE_MAP.get(name).migrate(n);
             n.findAncestor(CompilationUnit.class).ifPresent(p -> changedUnits.add(p));
         }
         return n;
     }
 
+    /**
+     * Обработка аннотации без аргументов
+     */
     @Override
     public Visitable visit(MarkerAnnotationExpr n, Object arg) {
         String name = n.getNameAsString();
-        if (ANNO_MIGRATE_MAP.containsKey(name)) {
+        if (ANNO_MIGRATE_MAP.containsKey(name)
+            &&
+            isNotException(n)
+        ) {
             ANNO_MIGRATE_MAP.get(name).migrate(n);
             n.findAncestor(CompilationUnit.class).ifPresent(p -> changedUnits.add(p));
         }

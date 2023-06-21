@@ -18,10 +18,12 @@ public final class Attributes {
     public static final String RESPONSE_CODE = "responseCode";
     public static final String RESPONSE_CONTAINER = "responseContainer";
     public static final String REQUIRED = "required";
+    public static final String REQUIRED_MODE = "requiredMode";
     public static final String SCHEMA = "schema";
     public static final String SUMMARY = "summary";
     public static final String TAGS = "tags";
     public static final String VALUE = "value";
+    public static final String TITLE = "title";
 
     private Attributes() {
     }

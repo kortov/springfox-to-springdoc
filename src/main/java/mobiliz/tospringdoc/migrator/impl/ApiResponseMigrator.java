@@ -6,13 +6,18 @@ import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import io.swagger.annotations.ApiResponse;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import mobiliz.tospringdoc.core.Attributes;
+import mobiliz.tospringdoc.core.NodeFactory;
 import mobiliz.tospringdoc.migrator.AbstractAnnotationMigrator;
-import mobiliz.tospringdoc.util.NodeUtils;
 import mobiliz.tospringdoc.util.ResponseUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static mobiliz.tospringdoc.core.NodeFactory.createEmptyContentExpr;
 
 public class ApiResponseMigrator extends AbstractAnnotationMigrator {
 
@@ -43,7 +48,7 @@ public class ApiResponseMigrator extends AbstractAnnotationMigrator {
                     responseContainer = pair.getValue().toString();
             }
         }
-        NodeUtils.applyResponse(expr, response, responseContainer, responseCode);
+        applyResponse(expr, response, responseContainer, responseCode);
     }
 
     @Override
@@ -63,5 +68,33 @@ public class ApiResponseMigrator extends AbstractAnnotationMigrator {
             }
         }
         return false;
+    }
+
+    private void applyResponse(NormalAnnotationExpr expr, String response, String responseContainer,
+                               Integer responseCode
+    ) {
+        if (expr == null) {
+            return;
+        }
+        NormalAnnotationExpr content = null;
+
+        if (response == null) {
+            if (responseCode != null && (200 == responseCode || 201 == responseCode)) {
+                return;
+            } else {
+                content = createEmptyContentExpr();
+            }
+        } else {
+            if (ResponseUtils.isArraySchemaRequired(responseContainer)) {
+                content = NodeFactory.createArrayContentExpr(response);
+                expr.tryAddImportToParentCompilationUnit(ArraySchema.class);
+            } else {
+                content = NodeFactory.createContentExpr(response);
+            }
+        }
+
+        expr.addPair(Attributes.CONTENT, content);
+        expr.tryAddImportToParentCompilationUnit(Schema.class);
+        expr.tryAddImportToParentCompilationUnit(Content.class);
     }
 }

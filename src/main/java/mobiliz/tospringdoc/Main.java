@@ -68,10 +68,10 @@ public class Main {
         String outPath = inPlace ? sourcePath : cmd.getOptionValue(OUT);
         SourceWriter sourceWriter = outPath == null ? new ConsoleWriter() : new SourceFileWriter(outPath);
 
-        Set<CompilationUnit> units = toSpringDocVisitor.getChangedUnits();
+        Set<CompilationUnit> changedUnits = toSpringDocVisitor.getChangedUnits();
 
         migrationUnits.
-            stream().filter(mu -> units.contains(mu.getCompilationUnit()))
+            stream().filter(mu -> changedUnits.contains(mu.getCompilationUnit()))
             .forEach(mu -> {
                 try {
                     sourceWriter.write(mu);
