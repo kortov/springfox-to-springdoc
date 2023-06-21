@@ -21,20 +21,31 @@ public class ApiModelPropertyMigrator extends AbstractAnnotationMigrator {
         NodeList<MemberValuePair> newPairs = new NodeList<>();
         newPairs.addAll(expr.getPairs());
 
+        MemberValuePair valuePair = null;
+        MemberValuePair notesPair = null;
         for (MemberValuePair pair : expr.getPairs()) {
             String name = pair.getNameAsString();
             if (Attributes.VALUE.equals(name)) {
+                valuePair = pair;
                 pair.setName(Attributes.DESCRIPTION);
-            } else if (Attributes.NOTES.equals(name))
-            // TODO: выяснить на что заменить notes
-            {
-                pair.setName(Attributes.TITLE);
+            } else if (Attributes.NOTES.equals(name)) {
+                notesPair = pair;
+                newPairs.remove(pair);
             } else if (Attributes.REQUIRED.equals(name)) {
                 expr.tryAddImportToParentCompilationUnit(Schema.RequiredMode.class);
                 boolean required = pair.getValue().asBooleanLiteralExpr().getValue();
                 newPairs.remove(pair);
                 newPairs.add(new MemberValuePair(Attributes.REQUIRED_MODE, createRequiredExpr(required)));
             }
+        }
+        if (valuePair != null && notesPair != null) {
+            String value = valuePair.getValue().asStringLiteralExpr().getValue();
+            String note = notesPair.getValue().asStringLiteralExpr().getValue();
+            valuePair.getValue().asStringLiteralExpr().setValue(value + ". " + note);
+        }
+        if (notesPair != null && valuePair == null) {
+            System.err.println("There is a notes set:" + notesPair.getValue().asStringLiteralExpr().getValue() +
+                               " without value for annotation:" + expr.getNameAsString());
         }
 
         expr.setPairs(newPairs);

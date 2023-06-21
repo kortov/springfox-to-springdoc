@@ -1,7 +1,9 @@
 package mobiliz.tospringdoc.migrator;
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
@@ -37,7 +39,7 @@ import java.util.Set;
 public class ToSpringDocVisitor extends ModifierVisitor<Object> {
 
     private static Map<String, AbstractAnnotationMigrator> ANNO_MIGRATE_MAP = new HashMap<>();
-    private Set<CompilationUnit> changedUnits = new HashSet<>();
+    private Set<String> changedUnitsFullNames = new HashSet<>();
 
     static {
         ANNO_MIGRATE_MAP.put(Api.class.getSimpleName(), new ApiMigrator());
@@ -63,24 +65,31 @@ public class ToSpringDocVisitor extends ModifierVisitor<Object> {
             &&
             isNotException(n)
         ) {
+            putToChangedUnits(n);
             ANNO_MIGRATE_MAP.get(name).migrate(n);
-            n.findAncestor(CompilationUnit.class).ifPresent(p -> changedUnits.add(p));
         }
         return n;
     }
 
+    private void putToChangedUnits(AnnotationExpr n) {
+        n.findAncestor(CompilationUnit.class)
+         .flatMap(CompilationUnit::getPrimaryType)
+         .flatMap(TypeDeclaration::getFullyQualifiedName)
+         .ifPresent(changedUnitsFullNames::add);
+    }
+
     private static boolean isNotException(AnnotationExpr n) {
         return n.getParentNode()
-                .filter(nd -> nd instanceof ClassOrInterfaceDeclaration)
-                .map(nd -> (ClassOrInterfaceDeclaration) nd)
+                .filter(ClassOrInterfaceDeclaration.class::isInstance)
+                .map(ClassOrInterfaceDeclaration.class::cast)
                 .filter(c -> c.getNameAsString().contains("Exception")).isEmpty();
     }
 
     private static boolean isFieldOfClass(AnnotationExpr n, String classString) {
         return n.getParentNode()
-                .flatMap(nd -> nd.getParentNode())
-                .filter(nd -> nd instanceof ClassOrInterfaceDeclaration)
-                .map(nd -> (ClassOrInterfaceDeclaration) nd)
+                .flatMap(Node::getParentNode)
+                .filter(ClassOrInterfaceDeclaration.class::isInstance)
+                .map(ClassOrInterfaceDeclaration.class::cast)
                 .filter(c -> c.getNameAsString().contains(classString)).isPresent();
     }
 
@@ -94,8 +103,8 @@ public class ToSpringDocVisitor extends ModifierVisitor<Object> {
             &&
             isNotException(n)
         ) {
+            putToChangedUnits(n);
             ANNO_MIGRATE_MAP.get(name).migrate(n);
-            n.findAncestor(CompilationUnit.class).ifPresent(p -> changedUnits.add(p));
         }
         return n;
     }
@@ -110,13 +119,13 @@ public class ToSpringDocVisitor extends ModifierVisitor<Object> {
             &&
             isNotException(n)
         ) {
+            putToChangedUnits(n);
             ANNO_MIGRATE_MAP.get(name).migrate(n);
-            n.findAncestor(CompilationUnit.class).ifPresent(p -> changedUnits.add(p));
         }
         return n;
     }
 
-    public Set<CompilationUnit> getChangedUnits() {
-        return changedUnits;
+    public Set<String> getChangedUnitsFullNames() {
+        return changedUnitsFullNames;
     }
 }

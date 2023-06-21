@@ -14,12 +14,22 @@ public class ApiModelMigrator extends AbstractAnnotationMigrator {
     public void migrate(NormalAnnotationExpr expr) {
         replaceOrAddImport(expr, ApiModel.class, Schema.class);
         expr.setName(Schema.class.getSimpleName());
+        MemberValuePair valuePair = null;
+        MemberValuePair descriptionPair = null;
         for (MemberValuePair pair : expr.getPairs()) {
             String name = pair.getNameAsString();
             if (Attributes.VALUE.equals(name)) {
+                valuePair = pair;
                 pair.setName(Attributes.NAME);
+            } else if (Attributes.DESCRIPTION.equals(name)) {
+                descriptionPair = pair;
             }
         }
+
+        if (descriptionPair == null && valuePair != null) {
+            valuePair.setName(Attributes.DESCRIPTION);
+        }
+
     }
 
     @Override

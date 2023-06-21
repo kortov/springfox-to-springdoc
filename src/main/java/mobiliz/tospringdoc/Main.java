@@ -5,6 +5,7 @@ import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.Problem;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import mobiliz.tospringdoc.core.MigrationUnit;
 import mobiliz.tospringdoc.migrator.ToSpringDocVisitor;
 import mobiliz.tospringdoc.util.FileUtils;
@@ -68,10 +69,13 @@ public class Main {
         String outPath = inPlace ? sourcePath : cmd.getOptionValue(OUT);
         SourceWriter sourceWriter = outPath == null ? new ConsoleWriter() : new SourceFileWriter(outPath);
 
-        Set<CompilationUnit> changedUnits = toSpringDocVisitor.getChangedUnits();
+        Set<String> changedUnitsFullNames = toSpringDocVisitor.getChangedUnitsFullNames();
 
         migrationUnits.
-            stream().filter(mu -> changedUnits.contains(mu.getCompilationUnit()))
+            stream().filter(mu -> changedUnitsFullNames.contains(mu.getCompilationUnit()
+                                                                   .getPrimaryType()
+                                                                   .flatMap(TypeDeclaration::getFullyQualifiedName)
+                                                                   .orElse(null)))
             .forEach(mu -> {
                 try {
                     sourceWriter.write(mu);
