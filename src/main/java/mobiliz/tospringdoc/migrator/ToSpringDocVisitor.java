@@ -85,6 +85,9 @@ public class ToSpringDocVisitor extends ModifierVisitor<Object> {
                 .filter(c -> c.getNameAsString().contains("Exception")).isEmpty();
     }
 
+    /**
+     * Проверяет главный public class
+     */
     private static boolean isFieldOfClass(AnnotationExpr n, String classString) {
         return n.getParentNode()
                 .flatMap(Node::getParentNode)

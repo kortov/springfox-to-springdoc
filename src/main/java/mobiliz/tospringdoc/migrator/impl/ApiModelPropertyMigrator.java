@@ -1,20 +1,38 @@
 package mobiliz.tospringdoc.migrator.impl;
 
+import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.type.Type;
 import io.swagger.annotations.ApiModelProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import mobiliz.tospringdoc.core.Attributes;
 import mobiliz.tospringdoc.migrator.AbstractAnnotationMigrator;
 
+import java.time.Duration;
+import java.util.Optional;
+
 public class ApiModelPropertyMigrator extends AbstractAnnotationMigrator {
 
     @Override
     public void migrate(NormalAnnotationExpr expr) {
+
+        if (isFieldOfClass(expr, Duration.class)) {
+            Optional<String> declarationType = expr.findAncestor(CompilationUnit.class)
+                                                   .flatMap(CompilationUnit::getPrimaryType)
+                                                   .flatMap(TypeDeclaration::getFullyQualifiedName);
+            System.err.println(
+                "Found Duration field declaration with ApiModelProperty, customize its schema manually in class " +
+                declarationType.orElse(null));
+        }
 
         replaceOrAddImport(expr, ApiModelProperty.class, Schema.class);
         expr.setName(Schema.class.getSimpleName());
@@ -63,6 +81,18 @@ public class ApiModelPropertyMigrator extends AbstractAnnotationMigrator {
         expr.setScope(new NameExpr(Schema.RequiredMode.class.getSimpleName()));
         expr.setName(requiredMode.name());
         return expr;
+    }
+
+    /**
+     * Поле с типом нужного класса
+     */
+    private static boolean isFieldOfClass(AnnotationExpr expr, Class<?> clazz) {
+        return expr.getParentNode()
+                   .filter(FieldDeclaration.class::isInstance)
+                   .map(FieldDeclaration.class::cast)
+                   .filter(c -> c.getVariables().stream().map(VariableDeclarator::getType).map(Type::asString)
+                                 .anyMatch(n -> clazz.getSimpleName().equals(n)))
+                   .isPresent();
     }
 
 }
