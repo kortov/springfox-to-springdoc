@@ -1,6 +1,8 @@
 package mobiliz.tospringdoc.migrator.impl;
 
+import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
@@ -9,9 +11,11 @@ import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import java.lang.annotation.Annotation;
 import mobiliz.tospringdoc.core.Attributes;
 import mobiliz.tospringdoc.migrator.AbstractAnnotationMigrator;
+
+import java.lang.annotation.Annotation;
+import java.util.Optional;
 
 public abstract class AbstractApiParamMigrator extends AbstractAnnotationMigrator {
 
@@ -19,6 +23,9 @@ public abstract class AbstractApiParamMigrator extends AbstractAnnotationMigrato
 
     @Override
     public void migrate(NormalAnnotationExpr expr) {
+        Optional<String> declarationType = expr.findAncestor(CompilationUnit.class)
+                                               .flatMap(CompilationUnit::getPrimaryType)
+                                               .flatMap(TypeDeclaration::getFullyQualifiedName);
         NodeList<MemberValuePair> newPairs = new NodeList<>();
         for (MemberValuePair pair : expr.getPairs()) {
             switch (pair.getNameAsString()) {
@@ -37,7 +44,8 @@ public abstract class AbstractApiParamMigrator extends AbstractAnnotationMigrato
                     newPairs.add(new MemberValuePair(Attributes.IN, createInExpr(paramType)));
                     break;
                 default:
-                    System.out.println(String.format("@ApiImplicitParam::%s property cannot be migrated", pair.getNameAsString()));
+                    System.out.printf("@%s:%s property cannot be migrated in class %s%n", expr.getNameAsString(),
+                                      pair.getNameAsString(), declarationType.orElse(null));
             }
         }
         expr.setPairs(newPairs);

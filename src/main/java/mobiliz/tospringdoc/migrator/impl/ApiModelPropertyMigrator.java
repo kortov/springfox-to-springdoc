@@ -30,7 +30,7 @@ public class ApiModelPropertyMigrator extends AbstractAnnotationMigrator {
                                                    .flatMap(CompilationUnit::getPrimaryType)
                                                    .flatMap(TypeDeclaration::getFullyQualifiedName);
             System.err.println(
-                "Found Duration field declaration with ApiModelProperty, customize its schema manually in class " +
+                "Found Duration field declaration with ApiModelProperty, set schema in config or customize its schema manually in class " +
                 declarationType.orElse(null));
         }
 

@@ -25,6 +25,7 @@ import mobiliz.tospringdoc.migrator.impl.ApiMigrator;
 import mobiliz.tospringdoc.migrator.impl.ApiModelMigrator;
 import mobiliz.tospringdoc.migrator.impl.ApiModelPropertyMigrator;
 import mobiliz.tospringdoc.migrator.impl.ApiOperationMigrator;
+import mobiliz.tospringdoc.migrator.impl.ApiPageableMigrator;
 import mobiliz.tospringdoc.migrator.impl.ApiParamMigrator;
 import mobiliz.tospringdoc.migrator.impl.ApiResponseMigrator;
 import mobiliz.tospringdoc.migrator.impl.ApiResponsesMigrator;
@@ -52,6 +53,7 @@ public class ToSpringDocVisitor extends ModifierVisitor<Object> {
         ANNO_MIGRATE_MAP.put(ApiParam.class.getSimpleName(), new ApiParamMigrator());
         ANNO_MIGRATE_MAP.put(ApiResponse.class.getSimpleName(), new ApiResponseMigrator());
         ANNO_MIGRATE_MAP.put(ApiResponses.class.getSimpleName(), new ApiResponsesMigrator());
+        ANNO_MIGRATE_MAP.put("ApiPageable", new ApiPageableMigrator());
     }
 
     /**

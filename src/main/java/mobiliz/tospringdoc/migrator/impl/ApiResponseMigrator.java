@@ -6,11 +6,9 @@ import com.github.javaparser.ast.expr.MemberValuePair;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.StringLiteralExpr;
 import io.swagger.annotations.ApiResponse;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import mobiliz.tospringdoc.core.Attributes;
-import mobiliz.tospringdoc.core.NodeFactory;
 import mobiliz.tospringdoc.migrator.AbstractAnnotationMigrator;
 import mobiliz.tospringdoc.util.ResponseUtils;
 
@@ -78,23 +76,14 @@ public class ApiResponseMigrator extends AbstractAnnotationMigrator {
         }
         NormalAnnotationExpr content = null;
 
-        if (response == null) {
-            if (responseCode != null && (200 == responseCode || 201 == responseCode)) {
-                return;
-            } else {
-                content = createEmptyContentExpr();
-            }
+        if (responseCode != null && (200 == responseCode || 201 == responseCode)) {
+            return;
         } else {
-            if (ResponseUtils.isArraySchemaRequired(responseContainer)) {
-                content = NodeFactory.createArrayContentExpr(response);
-                expr.tryAddImportToParentCompilationUnit(ArraySchema.class);
-            } else {
-                content = NodeFactory.createContentExpr(response);
-            }
+            content = createEmptyContentExpr();
+            expr.addPair(Attributes.CONTENT, content);
+            expr.tryAddImportToParentCompilationUnit(Schema.class);
+            expr.tryAddImportToParentCompilationUnit(Content.class);
         }
 
-        expr.addPair(Attributes.CONTENT, content);
-        expr.tryAddImportToParentCompilationUnit(Schema.class);
-        expr.tryAddImportToParentCompilationUnit(Content.class);
     }
 }
